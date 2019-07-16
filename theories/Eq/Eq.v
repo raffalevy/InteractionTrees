@@ -760,8 +760,8 @@ Proof.
   apply Reflexive_eqit; eauto.
 Qed.
 
-Lemma unfold_aloop {E A B} (f : A -> itree E A + B) (x : A) :
-  (ITree.aloop f x) ≅ (ITree._aloop (fun t => Tau t) (ITree.aloop f) (f x)).
+Lemma unfold_iter {E A B} (f : A -> itree E (A + B)) (x : A) :
+  (ITree.iter f x) ≅ (f x >>= ITree._iter (fun t => Tau t) (ITree.iter f)).
 Proof.
   rewrite unfold_aloop_. reflexivity.
 Qed.

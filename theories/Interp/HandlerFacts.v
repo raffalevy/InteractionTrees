@@ -50,7 +50,7 @@ Qed.
 Instance CatIdL_Handler : CatIdL Handler.
 Proof.
   cbv; intros.
-  rewrite interp_trigger, tau_eutt.
+  rewrite interp_trigger.
   reflexivity.
 Qed.
 
@@ -83,14 +83,14 @@ Qed.
 Instance CaseInl_Handler : CaseInl Handler sum1.
 Proof.
   cbv; intros.
-  rewrite interp_trigger, tau_eutt.
+  rewrite interp_trigger.
   reflexivity.
 Qed.
 
 Instance CaseInr_Handler : CaseInr Handler sum1.
 Proof.
   cbv; intros.
-  rewrite interp_trigger, tau_eutt.
+  rewrite interp_trigger.
   reflexivity.
 Qed.
 
@@ -98,8 +98,8 @@ Instance CaseUniversal_Handler : CaseUniversal Handler sum1.
 Proof.
   cbv; intros.
   destruct (_ : sum1 _ _ _).
-  - rewrite <- H, interp_trigger, tau_eutt. reflexivity.
-  - rewrite <- H0, interp_trigger, tau_eutt. reflexivity.
+  - rewrite <- H, interp_trigger. reflexivity.
+  - rewrite <- H0, interp_trigger. reflexivity.
 Qed.
 
 Global Instance Coproduct_Handler : Coproduct Handler sum1.
@@ -147,11 +147,12 @@ Proof.
     rewrite (unfold_interp_mrec _ _ (Tau _)); cbn.
     estep.
   - rewrite unfold_interp_mrec; cbn.
-    rewrite interp_tau.
     rewrite interp_vis.
-    rewrite unfold_interp_mrec; cbn.
-    destruct e.
-    + estep. subst h. rewrite interp_trigger, bind_tau.
+    destruct e; cbn.
+    + rewrite interp_tau, tau_eutt.
+      rewrite 2 interp_mrec_bind, interp_bind.
+      rewrite (interp_mrec_as_interp _ (h _ _)).
+      subst h; cbn. rewrite interp_trigger, bind_tau.
       rewrite (unfold_interp_mrec _ _ (Tau _)); cbn.
       rewrite tau_eutt.
       rewrite (interp_mrec_bind _ (ITree.trigger _)).
