@@ -169,21 +169,24 @@ Lemma interp_asm_GetReg {E A} f r mem reg :
 Proof.
   unfold interp_asm, interp_map.
   rewrite interp_bind.
-  setoid_rewrite interp_trigger. rewrite tau_eutt.
+  setoid_rewrite interp_trigger.
   repeat rewrite interp_state_bind. cbn. 
   unfold subevent, resum, ReSum_inl, resum, ReSum_id, id_.
   unfold Id_IFun. 
   unfold CategoryOps.cat, Cat_Handler, Handler.cat. cbn.
   unfold lookup_def.  
   unfold embed, Embeddable_forall, embed, Embeddable_itree.
-  unfold trigger. rewrite interp_vis. setoid_rewrite interp_ret. rewrite tau_eutt.
+  unfold trigger. rewrite interp_vis. setoid_rewrite interp_ret.
   unfold subevent, resum.
   repeat rewrite interp_state_bind.
   repeat setoid_rewrite interp_state_ret.
   unfold inl_, Inl_sum1_Handler, Handler.inl_, Handler.htrigger.
-  rewrite interp_state_trigger. rewrite tau_eutt. cbn.
+  rewrite interp_state_trigger. cbn.
+  rewrite !bind_ret, !tau_eutt.
   rewrite interp_state_ret.
-  repeat rewrite bind_ret. cbn.
+  rewrite !bind_ret, !tau_eutt.
+  rewrite !interp_state_ret; cbn.
+  rewrite bind_ret; cbn.
   reflexivity.
 Qed.
 
@@ -195,19 +198,20 @@ Proof.
   unfold interp_asm, interp_map.
   rewrite interp_bind.
   unfold trigger.
-  rewrite interp_vis. rewrite tau_eutt.
+  rewrite interp_vis.
   unfold subevent, resum, ReSum_inl, resum, ReSum_id, id_. cbn.
   setoid_rewrite interp_ret.
   rewrite bind_bind.
+  setoid_rewrite tau_eutt.
   setoid_rewrite bind_ret.
   repeat rewrite interp_state_bind.
   unfold Id_IFun.
   unfold CategoryOps.cat, Cat_Handler, Handler.cat. cbn.
   unfold inl_, Inl_sum1_Handler, Handler.inl_, Handler.htrigger.
   unfold insert.
-  setoid_rewrite interp_trigger. rewrite tau_eutt.
+  setoid_rewrite interp_trigger.
   repeat rewrite interp_state_trigger.  cbn.
-  rewrite tau_eutt.
+  rewrite bind_ret, tau_eutt.
   setoid_rewrite interp_state_ret.
   rewrite bind_ret. cbn.
   reflexivity.
@@ -220,7 +224,7 @@ Lemma interp_asm_Load {E A} f a mem reg :
 Proof.
   unfold interp_asm, interp_map.
   rewrite interp_bind.
-  rewrite interp_trigger. rewrite tau_eutt.
+  rewrite interp_trigger.
   unfold subevent, resum, ReSum_inr, resum, ReSum_inl, resum, ReSum_id, id_. cbn.
   repeat rewrite interp_state_bind.
   unfold Id_IFun.
@@ -230,10 +234,12 @@ Proof.
   unfold inr_, Inr_sum1_Handler, Handler.inr_, Handler.htrigger.
   unfold lookup_def.
   repeat (setoid_rewrite interp_trigger; rewrite tau_eutt).
-  repeat rewrite interp_state_trigger. rewrite tau_eutt.
-  cbn. unfold pure_state. rewrite interp_state_vis. cbn.  rewrite tau_eutt.
-  rewrite bind_ret. rewrite interp_state_ret.
-  repeat rewrite bind_ret. cbn. 
+  repeat rewrite interp_state_trigger.
+  cbn. unfold pure_state, embed, Embeddable_forall, embed, Embeddable_itree, trigger.
+  do 2 rewrite interp_vis, bind_vis.
+  rewrite interp_state_vis. cbn. rewrite bind_vis, interp_state_vis. cbn.
+  rewrite !bind_ret, !tau_eutt. rewrite !interp_ret, !interp_state_ret.
+  rewrite bind_ret; cbn.
   reflexivity.
 Qed.  
 
@@ -244,7 +250,7 @@ Lemma interp_asm_Store {E A} f a v mem reg :
 Proof.
   unfold interp_asm, interp_map.
   rewrite interp_bind.
-  rewrite interp_trigger. rewrite tau_eutt.
+  rewrite interp_trigger.
   unfold subevent, resum, ReSum_inr, resum, ReSum_inl, resum, ReSum_id, id_. cbn.
   repeat rewrite interp_state_bind.
   unfold Id_IFun.
@@ -253,16 +259,14 @@ Proof.
   unfold inl_, Inl_sum1_Handler, Handler.inl_, Handler.htrigger.
   unfold inr_, Inr_sum1_Handler, Handler.inr_, Handler.htrigger.
   unfold insert, embed, Embeddable_forall, embed, Embeddable_itree. 
-  rewrite interp_trigger. rewrite tau_eutt.
-  setoid_rewrite interp_trigger. rewrite tau_eutt.
-  rewrite interp_state_trigger. rewrite tau_eutt. cbn.
-  unfold pure_state. rewrite interp_state_vis. cbn.  rewrite tau_eutt.
-  rewrite bind_ret. rewrite interp_state_ret.
-  repeat rewrite bind_ret. cbn. 
+  rewrite interp_trigger.
+  setoid_rewrite interp_trigger.
+  rewrite interp_state_trigger. cbn.
+  cbn. unfold pure_state, embed, Embeddable_forall, embed, Embeddable_itree, trigger.
+  rewrite bind_vis, interp_state_vis. cbn. rewrite !bind_ret, !tau_eutt.
+  rewrite interp_state_ret, bind_ret; cbn.
   reflexivity.
-Qed.  
-  
-
+Qed.
 
 (* peephole optimizations --------------------------------------------------- *)
 
@@ -353,24 +357,22 @@ Proof.
     + unfold interp_asm, interp_map.
       unfold id_, Id_Handler, Handler.id_.
       unfold exit.
-      rewrite interp_vis. rewrite tau_eutt.
+      rewrite interp_vis.
       cbn. rewrite interp_state_bind.
       unfold CategoryOps.cat, Cat_Handler, Handler.cat, inr_, Inr_sum1_Handler, Handler.inr_, Handler.htrigger.
-      setoid_rewrite interp_trigger. rewrite tau_eutt.
+      setoid_rewrite interp_trigger.
       unfold inr_.
-      rewrite interp_trigger. rewrite tau_eutt.
-      rewrite interp_state_trigger. rewrite tau_eutt.
+      rewrite interp_trigger.
+      rewrite interp_state_trigger.
       rewrite interp_state_bind.
-      cbn. unfold pure_state. rewrite interp_state_vis. cbn.  rewrite tau_eutt.
+      cbn. unfold pure_state.
+      rewrite bind_vis, interp_state_vis. cbn.
       repeat rewrite bind_vis.
       rewrite interp_state_bind.
-      rewrite interp_state_trigger. cbn.  rewrite tau_eutt.
+      rewrite interp_state_trigger. cbn.
+      rewrite !bind_vis, interp_state_vis. cbn.
       rewrite bind_vis.
-      rewrite interp_state_vis. rewrite tau_eutt. cbn.
-      rewrite bind_vis.
-      unfold resum, ReSum_id, id_, Id_IFun.
-      apply eqit_Vis.
-      intros. inversion u.
+      apply eqit_Vis; intros [].
 Qed.
 
 
@@ -408,15 +410,17 @@ Proof.
   unfold denote_bks.
   unfold iter, Iter_sktree.
   repeat rewrite interp_iter.
-  unfold KTree.iter, Iter_ktree.
+  unfold KTree.iter, Iter_Kleisli.
   cbn. 
-  pose proof @interp_state_aloop'.
+  pose proof @interp_state_iter'.
   red in H5.
   repeat rewrite H5.
-  unfold aloop, ALoop_stateT0, aloop, ALoop_itree.
+  unfold Basics.iter, MonadIter_stateT0, Basics.iter, MonadIter_itree.
   repeat rewrite H5.
-  unfold aloop, ALoop_stateT0, aloop, ALoop_itree.
-  eapply (@eutt_aloop'  _ _ _ _ _ rel_asm); auto.
+  unfold Basics.iter, MonadIter_stateT0, Basics.iter, MonadIter_itree.
+  cbn.
+  fail. (* TODO *)
+  eapply eutt_iter' with (RI := fun mt1 mt2 => eutt (fun r1 r2 => rel_asm (fst mt1, r1) (fst mt2, r2)) (snd mt1) (snd mt2)); cbn.
   intros j1 j2 Hrel.
   inversion Hrel. subst.
   inversion H7; subst. subst.
