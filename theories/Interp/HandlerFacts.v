@@ -175,26 +175,26 @@ Proof.
       rewrite (unfold_interp_mrec _ _ (Tau _)); cbn.
       rewrite !bind_tau.
       etau. rewrite tau_eutt, <- interp_bind, <- 2 interp_mrec_bind.
-      match goal with
-      | [ |- _ _ (Recursion.interp_mrec ?h0 (x <- ?u0 ;; Tau ?k0)) ] =>
-        assert (HRim : Recursion.interp_mrec h0 (x <- u0 ;; Tau k0) ≳
-               Recursion.interp_mrec h0 (x <- u0 ;; k0))
-      end.
-      { admit. }
-      rewrite HRim.
+      setoid_rewrite (tau_eutt (interp _ _)).
       rewrite <- interp_bind.
       auto with paco.
     + rewrite interp_vis.
       rewrite interp_mrec_bind.
       subst h; cbn.
-      ebind. econstructor.
-      { instantiate (1 := eq). admit. }
+      Local Transparent eutt.
+      ebind. apply (pbc_intro_h _ _ _ _ _ eq).
+      { rewrite interp_mrec_as_interp, interp_interp.
+        rewrite <- interp_id_h at 1.
+        eapply eutt_interp; try reflexivity.
+        intros ? ?.
+        rewrite interp_trigger; cbn.
+        reflexivity. }
       intros ? _ [].
       rewrite (unfold_interp_mrec _ _ (Tau _)); cbn.
       etau.
       rewrite tau_eutt.
       auto with paco.
-Admitted.
+Qed.
 
 Section DinatSimulation.
 
@@ -264,6 +264,7 @@ Qed.
 
 End DinatSimulation.
 
+Local Opaque eutt.
 Local Transparent ITree.trigger.
 
 Instance IterDinatural_Handler : IterDinatural Handler sum1.
@@ -274,7 +275,19 @@ Proof.
       Recursion.interp_mrec (cat f (case_ g inr_))
                             (interp (case_ g inr_) (f _ a0))
     ≈ interp (mrecursive (cat g (case_ f inr_))) (f _ a0)).
-  { admit. }
+  { cbv in H. etransitivity; [etransitivity; [|apply H]|]; clear H.
+    - symmetry. apply euttge_sub_eutt, euttge_interp_mrec.
+      1: intros ? ?.
+      1,2: rewrite tau_eutt; apply euttge_interp; try reflexivity.
+      1,2: intros ? []; [apply tau_eutt| reflexivity].
+    - apply euttge_sub_eutt, euttge_interp; [ | apply tau_eutt].
+      intros ? []; try reflexivity.
+      rewrite tau_eutt. apply euttge_interp_mrec.
+      intros ? ?.
+      rewrite tau_eutt.
+      all: apply euttge_interp; try reflexivity.
+      all: intros ? []; [apply tau_eutt | reflexivity].
+  }
   rewrite <- interp_mrec_as_interp.
 
   rewrite <- (bind_ret2 (interp _ _)).
@@ -282,7 +295,7 @@ Proof.
 
   apply interleaved_mrec.
   do 2 constructor.
-Admitted.
+Qed.
 
 Local Opaque ITree.trigger.
 
@@ -305,7 +318,16 @@ Proof.
                                    | inl1 x => ITree.trigger (inl1 x)
                                    | inr1 y => ITree.trigger y
                                    end) t)).
-  { admit. }
+  { subst f. etransitivity; [etransitivity; [| apply H] |]; clear H.
+    - symmetry. apply euttge_sub_eutt, euttge_interp_mrec.
+      + intros ? ?. apply euttge_interp_mrec; try apply tau_eutt.
+        intros ? ?. apply tau_eutt.
+      + apply euttge_interp_mrec; repeat intro; reflexivity + rewrite tau_eutt.
+        reflexivity.
+    - apply euttge_sub_eutt, euttge_interp_mrec; repeat intro;
+        apply euttge_interp; try reflexivity.
+      apply tau_eutt.
+  }
   revert t. einit; ecofix CIH. intros.
   rewrite (itree_eta t); destruct (observe t); cbn.
   all: rewrite (unfold_interp_mrec _ _ (go _)), unfold_interp; cbn.
@@ -329,7 +351,7 @@ Proof.
     destruct s; estep.
     rewrite <- interp_mrec_bind, <- interp_bind.
     auto with paco.
-Admitted.
+Qed.
 
 Global Instance Iterative_Handler : Iterative Handler sum1.
 Proof.
