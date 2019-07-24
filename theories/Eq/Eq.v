@@ -359,7 +359,7 @@ Proof.
 Qed.
 
 Global Instance eq_sub_euttge:
-  subrelation (@eqit E _ _ RR false false) (eqit RR true false).
+  subrelation (@eq_itree E _ _ RR) (euttge RR).
 Proof.
   ginit. gcofix CIH. intros.
   punfold H0. gstep. red in H0 |- *.
@@ -367,7 +367,7 @@ Proof.
 Qed.  
 
 Global Instance euttge_sub_eutt:
-  subrelation (@eqit E _ _ RR true false) (eqit RR true true).
+  subrelation (@euttge E _ _ RR) (eutt RR).
 Proof.
   ginit. gcofix CIH. intros.
   punfold H0. gstep. red in H0 |- *.
@@ -375,7 +375,7 @@ Proof.
 Qed.
 
 Global Instance eq_sub_eutt:
-  subrelation (@eqit E _ _ RR false false) (eqit RR true true).
+  subrelation (@eq_itree E _ _ RR) (eutt RR).
 Proof.
   red; intros. eapply euttge_sub_eutt. eapply eq_sub_euttge. apply H.
 Qed.

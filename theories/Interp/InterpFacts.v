@@ -94,7 +94,7 @@ Proof. rewrite unfold_interp. reflexivity. Qed.
 Lemma interp_trigger {E F : Type -> Type} {R : Type}
       (f : E ~> (itree F))
       (e : E R) :
-  interp f (ITree.trigger e) ≈ f _ e.
+  interp f (ITree.trigger e) ≳ f _ e.
 Proof.
   unfold ITree.trigger. rewrite interp_vis.
   setoid_rewrite interp_ret.
@@ -176,9 +176,14 @@ Instance eutt_interp' {E F : Type -> Type} {R : Type} (f : E ~> itree F) :
   Proper (eutt eq ==> eutt eq)
          (@interp E (itree F) _ _ _ f R).
 Proof.
-  repeat red.
-  apply eutt_interp.
-  reflexivity.
+  repeat red. apply eutt_interp. reflexivity.
+Qed.
+
+Instance euttge_interp' {E F : Type -> Type} {R : Type} (f : E ~> itree F) :
+  Proper (euttge eq ==> euttge eq)
+         (@interp E (itree F) _ _ _ f R).
+Proof.
+  repeat red. apply euttge_interp. reflexivity.
 Qed.
 
 (* Proof of

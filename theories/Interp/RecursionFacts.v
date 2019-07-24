@@ -80,6 +80,10 @@ Proof.
   - econstructor. gstep; constructor. auto with paco.
 Qed.
 
+Global Instance euttge_mrec {R} :
+  Proper (euttge eq ==> euttge eq) (@interp_mrec _ _ ctx R).
+Admitted.
+
 Theorem interp_mrec_bind {U T} (t : itree _ U) (k : U -> itree _ T) :
   interp_mrec ctx (ITree.bind t k) ≅
   ITree.bind (interp_mrec ctx t) (fun x => interp_mrec ctx (k x)).
@@ -95,6 +99,18 @@ Proof.
   all: try (gstep; econstructor; eauto with paco).
   - rewrite <- bind_bind; eauto with paco.
   - intros. red. rewrite bind_tau. gstep; constructor; auto with paco.
+Qed.
+
+Theorem interp_mrec_trigger {U} (a : (D +' E) U) :
+    interp_mrec ctx (ITree.trigger a)
+  ≳ mrecursive ctx _ a.
+Proof.
+  rewrite unfold_interp_mrec; unfold mrecursive.
+  destruct a; cbn.
+  rewrite tau_eutt, bind_ret2.
+  reflexivity.
+  pstep; constructor. intros; left. rewrite tau_eutt, unfold_interp_mrec; cbn.
+  apply reflexivity.
 Qed.
 
 Theorem interp_mrec_as_interp {T} (c : itree _ T) :
@@ -176,6 +192,13 @@ Proof.
   1,2: gstep; constructor; auto with paco.
   1,2: rewrite unfold_interp_mrec, tau_eutt; auto.
 Qed.
+
+Global Instance euttge_interp_mrec {D E} :
+  @Proper ((D ~> itree (D +' E)) -> (itree (D +' E) ~> itree E))
+          (Relation.i_pointwise (fun _ => euttge eq) ==>
+           Relation.i_respectful (fun _ => euttge eq) (fun _ => euttge eq))
+          interp_mrec.
+Admitted.
 
 (** [rec body] is equivalent to [interp (recursive body)],
     where [recursive] is defined as follows. *)
