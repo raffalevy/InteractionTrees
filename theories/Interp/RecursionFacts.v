@@ -80,10 +80,6 @@ Proof.
   - econstructor. gstep; constructor. auto with paco.
 Qed.
 
-Global Instance euttge_mrec {R} :
-  Proper (euttge eq ==> euttge eq) (@interp_mrec _ _ ctx R).
-Admitted.
-
 Theorem interp_mrec_bind {U T} (t : itree _ U) (k : U -> itree _ T) :
   interp_mrec ctx (ITree.bind t k) ≅
   ITree.bind (interp_mrec ctx t) (fun x => interp_mrec ctx (k x)).
@@ -193,13 +189,6 @@ Proof.
   1,2: rewrite unfold_interp_mrec, tau_eutt; auto.
 Qed.
 
-Global Instance euttge_interp_mrec {D E} :
-  @Proper ((D ~> itree (D +' E)) -> (itree (D +' E) ~> itree E))
-          (Relation.i_pointwise (fun _ => euttge eq) ==>
-           Relation.i_respectful (fun _ => euttge eq) (fun _ => euttge eq))
-          interp_mrec.
-Admitted.
-
 (** [rec body] is equivalent to [interp (recursive body)],
     where [recursive] is defined as follows. *)
 Definition recursive {E A B} (f : A -> itree (callE A B +' E) B) : (callE A B +' E) ~> itree E :=
@@ -222,4 +211,31 @@ Proof.
   unfold recursive. unfold call.
   rewrite interp_trigger. cbn.
   reflexivity.
+Qed.
+
+
+Global Instance euttge_interp_mrec {D E} :
+  @Proper ((D ~> itree (D +' E)) -> (itree (D +' E) ~> itree E))
+          (Relation.i_pointwise (fun _ => euttge eq) ==>
+           Relation.i_respectful (fun _ => euttge eq) (fun _ => euttge eq))
+          interp_mrec.
+Proof.
+  intros f g Hfg R.
+  ginit; gcofix CIH; intros t1 t2 Ht.
+  rewrite 2 unfold_interp_mrec.
+  punfold Ht; induction Ht; cbn; pclearbot.
+  3: { destruct e; gstep; constructor.
+    + gfinal; left. apply CIH.
+      eapply eqit_bind; auto. apply Hfg.
+    + gstep; constructor. auto with paco.
+  }
+  1,2: gstep; constructor; auto with paco.
+  1: rewrite unfold_interp_mrec, tau_eutt; auto.
+  discriminate.
+Qed.
+
+Global Instance euttge_interp_mrec' {E D R} (ctx : D ~> itree (D +' E)) :
+  Proper (euttge eq ==> euttge eq) (@interp_mrec _ _ ctx R).
+Proof.
+  do 4 red. eapply euttge_interp_mrec. reflexivity.
 Qed.
