@@ -63,19 +63,16 @@ Instance eq_itree_interp_state {E F S R} (h : E ~> Monads.stateT S (itree F)) :
          (@interp_state _ _ _ _ _ _ h R).
 Proof.
   revert_until R.
-  ginit. gcofix CIH. intros h x y H0 x2 y0 H1.
+  ginit. gcofix CIH. intros h x y H0 x2 _ [].
   rewrite !unfold_interp_state.
-  unfold _interp_state.
   punfold H0; repeat red in H0.
-  gstep; induction H0; subst; pclearbot.
-  - constructor; auto.
-  - constructor; auto with paco.
-  - admit. (* guclo eqit_clo_bind. econstructor.
+  destruct H0; subst; pclearbot; try discriminate; cbn.
+  - gstep; constructor; auto.
+  - gstep; constructor; auto with paco.
+  - guclo eqit_clo_bind. econstructor.
     + reflexivity.
-    + intros [] _ []. gstep; constructor; auto with paco. *)
-  - admit.
-  - admit.
-Admitted.
+    + intros [] _ []. gstep; constructor; auto with paco.
+Qed.
 
 Lemma interp_state_ret {E F : Type -> Type} {R S : Type}
       (f : forall T, E T -> S -> itree F (S * T)%type)
