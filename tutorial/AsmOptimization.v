@@ -99,10 +99,10 @@ Global Instance EQ_memory_eqv : Equivalence (EQ_memory).
 constructor; typeclasses eauto.
 Qed.
 
-
 Definition rel_asm {B} : memory * (registers * B) -> memory * (registers * B) -> Prop := 
   prod_rel EQ_memory (prod_rel (EQ_registers 0) eq).
 
+Hint Unfold rel_asm.
 
 (** The definition [interp_asm] also induces a notion of equivalence (open)
     _asm_ programs, which is just the equivalence of the ktree category *)
@@ -388,7 +388,6 @@ Proof.
   repeat setoid_rewrite interp_bind.
   repeat rewrite interp_state_bind.
   apply (@eutt_clo_bind _ _ _ _ _ _ rel_asm).
-
   
   { apply (@eutt_clo_bind _ _ _ _ _ _ rel_asm).
     -  unfold inr_, CoprodInr_Kleisli, lift_ktree_.
@@ -403,7 +402,7 @@ Proof.
        apply eqit_Ret.
        inversion H4; subst.
        constructor; auto. }
-    
+
   intros. 
   inversion H0; subst.
   simpl in *.
@@ -414,55 +413,38 @@ Proof.
   cbn. 
   pose proof @interp_state_iter'.
   red in H5.
+  unfold Basics.iter, MonadIter_stateT0, Basics.iter, MonadIter_itree in *.
+  cbn in *.
   repeat rewrite H5.
-  unfold Basics.iter, MonadIter_stateT0, Basics.iter, MonadIter_itree.
-  repeat rewrite H5.
-  unfold Basics.iter, MonadIter_stateT0, Basics.iter, MonadIter_itree.
-  cbn.
-  fail. (* TODO *)
-  eapply eutt_iter' with (RI := fun mt1 mt2 => eutt (fun r1 r2 => rel_asm (fst mt1, r1) (fst mt2, r2)) (snd mt1) (snd mt2)); cbn.
-  intros j1 j2 Hrel.
-  inversion Hrel. subst.
-  inversion H7; subst. subst.
-  inversion Hrel. subst.
-  cbn.
-  destruct b5.
-  - constructor.
-    repeat rewrite interp_bind.
-    repeat rewrite interp_state_bind.
-    eapply (@eutt_clo_bind _ _ _ _ _ _ rel_asm).
-    + eapply (@eutt_clo_bind _ _ _ _ _ _ rel_asm).
-      * unfold peephole_optimize_bks.
-        pose proof @peephole_block_correct.
-        unfold eq_asm_denotations_EQ, interp_asm, interp_map in H9.    
-        eapply H9; auto.
-        apply f.
-      * intros.
-        inversion H9.
-        subst. inversion H11; subst.
-        repeat rewrite bind_ret.
-        unfold CategoryOps.cat, Cat_sktree, CategoryOps.cat, Cat_Kleisli. cbn.
-        unfold case_, Case_sum1, CoprodCase_Kleisli, case_sum.
-        destruct (split_fin_sum b5).
-        -- repeat rewrite bind_ret.
-           rewrite interp_ret.
-           repeat rewrite interp_state_ret.
-           apply eqit_Ret. constructor; auto.
-        -- repeat rewrite bind_ret.
-           rewrite interp_ret.
-           repeat rewrite interp_state_ret.
-           apply eqit_Ret. constructor; auto.
-    + intros.
-      inversion H9.
-      subst; cbn.
-      repeat rewrite interp_ret.
-      repeat rewrite interp_state_ret.
-      apply eqit_Ret. constructor; auto.
-      inversion H11; subst.
-      constructor; auto.
-  - constructor. constructor; auto.
-  - inversion H4; subst. constructor; auto.
-Qed.    
+
+  eapply eutt_iter' with (RI := rel_asm); cbn.
+  2: destruct H4; auto.
+  intros j1 j2 [ ? ? ? ? ? [? ? ? ? ? []]]; cbn.
+  rewrite !interp_bind, !interp_state_bind, !bind_bind. (* Slow! *)
+
+  apply (@eutt_clo_bind _ _ _ _ _ _ rel_asm);
+    [|intros ? ? [? ? ? ? ? [? ? ? ? ? []]]]; cbn.
+  { eapply @peephole_block_correct; eauto. }
+
+  apply (@eutt_clo_bind _ _ _ _ _ _ rel_asm);
+    [|intros ? ? [? ? ? ? ? [? ? ? ? ? []]]]; cbn.
+  { rewrite bind_ret.
+    unfold case_, Case_sum1, CoprodCase_Kleisli, case_sum.
+    unfold CategoryOps.cat, Cat_sktree, CategoryOps.cat, Cat_Kleisli.
+    unfold inl_, Inl_sktree, inl_, CoprodInl_Kleisli, lift_ktree_.
+    unfold inr_, Inr_sktree, inr_, CoprodInr_Kleisli, lift_ktree_.
+    unfold id_, Id_sktree, id_, Id_Kleisli, lift_ktree_.
+    cbn.
+    destruct split_fin_sum.
+    all: rewrite !bind_ret, interp_ret, !interp_state_ret.
+    all: apply eqit_Ret; auto.
+  }
+
+  rewrite interp_ret, !interp_state_ret, !bind_ret.
+  rewrite !interp_state_ret, !bind_ret; cbn.
+  apply eqit_Ret.
+  destruct split_fin_sum; auto.
+Qed.
 
 
 (* concrete optimizations --------------------------------------------------- *)
@@ -520,28 +502,22 @@ Proof.
 
       unfold trigger.
       unfold interp_asm, interp_map.
-      rewrite interp_vis. rewrite tau_eutt.
+      rewrite interp_vis.
       cbn.
       repeat rewrite interp_state_bind.
       unfold CategoryOps.cat, Cat_Handler, Handler.cat. simpl.
       unfold inl_, Inl_sum1_Handler, Handler.inl_, Handler.htrigger.
       unfold insert.
       unfold embed, Embeddable_itree, Embeddable_forall, inl_, embed.
-      rewrite interp_trigger. rewrite tau_eutt.
-      rewrite interp_state_trigger. rewrite tau_eutt.
+      rewrite interp_trigger.
+      rewrite interp_state_trigger.
       cbn.
-      rewrite interp_state_ret.
-      rewrite bind_ret.
-      rewrite interp_ret.
-      repeat rewrite interp_state_ret.
-      cbn.
-      apply eqit_Ret.
-      constructor; auto.
-      constructor; auto.
-      apply EQ_registers_add; auto. 
+      rewrite bind_ret, tau_eutt.
+      rewrite interp_state_ret, bind_ret, interp_ret. cbn.
+      rewrite tau_eutt, 2 interp_state_ret.
+      apply eqit_Ret. auto using EQ_registers_add.
     * apply Nat.eqb_neq in n.
       rewrite n.
-      simpl.
       apply interp_asm_ret_tt; auto. 
 Qed.      
 
